@@ -20,7 +20,7 @@ class TriviaTestCase(unittest.TestCase):
 
 
         self.good_question = {
-            "question":"How many months are in a year?",
+            "question":"How many months are in a year? ",
             "answer": "12",
             "category": "2",
             "difficulty": "1"
