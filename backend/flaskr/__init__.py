@@ -9,7 +9,6 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
-
 def paginate_questions(request, selection):
     page = request.args.get("page", 1, type=int)
     start = (page - 1) * QUESTIONS_PER_PAGE
@@ -48,7 +47,6 @@ def create_app(test_config=None):
     @app.route("/categories", methods=["GET"])
     def get_category():
         categories = Category.query.order_by(Category.id).all()
-         #print(categories)
         # cat = [category.format() for category in categories]
         return jsonify(
             {
@@ -99,10 +97,9 @@ def create_app(test_config=None):
     This removal will persist in the database and when you refresh the page.
     """
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
-    def delete_question(question_id):
+    def delete_question(q_id):
         try:
-            #question = Question.query.filter(Question.id == question_id).one_or_none()
-            question = Question.query.get(question_id)
+            question = Question.query.get(q_id)
             if (question is None):
               print("not working")
               abort(404)
@@ -110,15 +107,15 @@ def create_app(test_config=None):
             
             question.delete()
 
-            selection = Question.query.order_by(Question.id).all()
-            current_questions = paginate_questions(request, selection)
-
+            result = Question.query.order_by(Question.id).all()
+            q_current = paginate_questions(request, result)
+            q_total = Question.query.all()
             return jsonify(
                 {
                     "success": True,
-                    "deleted": question_id,
-                    "questions": current_questions,
-                    "total_questions": len(Question.query.all()),
+                    "deleted": q_id,
+                    "questions": q_current,
+                    "total_questions": len(q_total),
                 }
             )
         except:
@@ -199,22 +196,20 @@ def create_app(test_config=None):
     def questions_by_category(category_id):
       
         try:
-
             category = Category.query.filter_by(id=category_id).one_or_none()
 
-            if category is None:
+            if (category) is None:
                 abort(404)
 
-            selection = Question.query.filter_by(category=category.id).order_by(Question.id).all()
-            current_questions = paginate_questions(request, selection)
+            result = Question.query.filter_by(category=category.id).order_by(Question.id).all()
+            q_current = paginate_questions(request, result)
 
             return jsonify(
                     {
                         "success": True,
                         "category": category.type,
-                        "questions": current_questions,
-                        # "total_questions": len(Question.query.all()),
-                        "total_questions": len(selection),
+                        "questions": q_current,
+                        "total_questions": len(result),
                     }
                 )
         except:
@@ -236,25 +231,23 @@ def create_app(test_config=None):
 
       body = request.get_json()
       quiz_category = body.get("quiz_category", None)
-      previous_questions = body.get("previous_questions", None)
+      q_previous = body.get("previous_questions", None)
 
-      if ((quiz_category is None) or (previous_questions is None)):
+      if ((quiz_category is None) or (q_previous is None)):
         abort(400)
-
       else:
-        category_id = quiz_category['id']
-    
+        c_id = quiz_category['id']
       try:
-        if category_id == 0:
-            remaining_questions = Question.query.filter(Question.id.notin_(previous_questions)).all()
+        if c_id == 0:
+            r_questions = Question.query.filter(Question.id.notin_(q_previous)).all()
         else:
-            remaining_questions = Question.query.filter(Question.category==category_id,Question.id.notin_(previous_questions)).all()
+            r_questions = Question.query.filter(Question.category==c_id,Question.id.notin_(q_previous)).all()
         
-        if len(remaining_questions) > 0:
-            next_question = remaining_questions[random.randrange(0,len(remaining_questions),1)]
+        if len(r_questions) > 0:
+            n_question = r_questions[random.randrange(0,len(r_questions),1)]
             return jsonify({
                "success": True,
-               "question" : next_question.format()
+               "question" : n_question.format()
             })
         else :
          return jsonify(
